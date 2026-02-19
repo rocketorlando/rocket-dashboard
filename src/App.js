@@ -53,8 +53,10 @@ function waLink(p){const d=p.replace(/\D/g,"");const i=p.trim().startsWith("+")?
 function fmtDate(s){if(!s)return"";return new Date(s+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});}
 function fmtShort(s){if(!s)return"";return new Date(s+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});}
 function uid(){return`id-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;}
-async function sGet(k){try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null;}catch{return null;}}
-async function sSet(k,v){try{await window.storage.set(k,JSON.stringify(v));}catch(e){console.error(e);}}
+const SUPA_URL="https://pxuubpekzfvyfqlvkrdn.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dXVicGVremZ2eWZxbHZrcmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjUzMTAsImV4cCI6MjA4NzEwMTMxMH0.WriuTzeQWK62nuTr_Evz4Hvj0RR-EN6KZGsIM0tsO9M";
+async function sGet(k){try{const r=await fetch(`${SUPA_URL}/rest/v1/data_store?key=eq.${k}&select=value`,{headers:{"apikey":SUPA_KEY,"Authorization":`Bearer ${SUPA_KEY}`}});const d=await r.json();return d[0]?JSON.parse(d[0].value):null;}catch{return null;}}
+async function sSet(k,v){try{await fetch(`${SUPA_URL}/rest/v1/data_store`,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":`Bearer ${SUPA_KEY}`,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key:k,value:JSON.stringify(v),updated_at:new Date().toISOString()})});}catch(e){console.error(e);}}
 
 const Ico={
   Dash:()=><svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
