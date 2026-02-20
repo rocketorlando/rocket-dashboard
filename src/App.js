@@ -6,6 +6,7 @@ const MIN_MAP=Object.fromEntries(MINISTRIES.map(m=>[m.id,m]));
 const NBH_COLORS={"Windermere":"#6366f1","Dr. Phillips":"#8b5cf6","Millenia":"#a855f7","Davenport":"#ec4899","Winter Garden":"#f97316","Metrowest":"#14b8a6","Celebration":"#06b6d4","Lake Nona":"#3b82f6","Hunters Creek":"#22c55e","Clermont":"#eab308","Minneola":"#ef4444","Montverde":"#84cc16","Online":"#64748b"};
 const DAYS_ORDER=["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
 const DAY_COLORS={"Segunda":"#6366f1","Terça":"#8b5cf6","Quarta":"#14b8a6","Quinta":"#f97316","Sexta":"#ec4899","Sábado":"#facc15","Domingo":"#22c55e"};
+const PASSWORDS=["4855","0622","1357"];
 const INIT_GCS=[
   {id:"gc-1",name:"LION",leaderName:"Nicole Vassao",leaderPhone:"(689)253-4202",coLeaders:[],houseId:"",neighborhood:"Celebration",active:true,avgAttendance:0},
   {id:"gc-2",name:"BLUE",leaderName:"Gustavo Alves",leaderPhone:"(321)202-3664",coLeaders:[],houseId:"",neighborhood:"Clermont",active:true,avgAttendance:0},
@@ -73,6 +74,8 @@ const Ico={
   Undo:()=><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.11"/></svg>,
   Home:()=><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
   Filter:()=><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+  Lock:()=><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+  Unlock:()=><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>,
 };
 
 function Modal({title,onClose,children,wide}){return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(5px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px"}}><div style={{background:"#0b1628",border:"1px solid #1e3560",borderRadius:"16px",padding:"24px",width:"100%",maxWidth:wide?"600px":"460px",maxHeight:"90vh",overflowY:"auto"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}}><h3 style={{margin:0,fontSize:"15px",fontWeight:800,color:"#f1f5f9"}}>{title}</h3><button onClick={onClose} style={{background:"#1e3560",border:"none",borderRadius:"7px",width:"26px",height:"26px",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#64748b"}}><Ico.X/></button></div>{children}</div></div>);}
@@ -89,6 +92,40 @@ function FilterPill({options,value,onChange}){return(
     {options.map(o=><button key={o.value} onClick={()=>onChange(o.value)} style={{padding:"3px 11px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",border:`1px solid ${value===o.value?"#6366f1":"#1e3560"}`,background:value===o.value?"#6366f122":"#112039",color:value===o.value?"#a5b4fc":"#3d5275"}}>{o.label}</button>)}
   </div>
 );}
+
+function PinModal({onSuccess,onClose}){
+  const [pin,setPin]=useState(["","","",""]);
+  const [err,setErr]=useState(false);
+  const refs=[useState(null)[0],useState(null)[0],useState(null)[0],useState(null)[0]];
+  const inputRefs=[null,null,null,null].map(()=>{ const r={current:null}; return r; });
+  function handleKey(i,val){
+    if(!/^\d?$/.test(val))return;
+    const next=[...pin];next[i]=val.slice(-1);setPin(next);setErr(false);
+    if(val&&i<3)inputRefs[i+1].current?.focus();
+    if(i===3&&val){const full=next.join("");if(PASSWORDS.includes(full)){onSuccess();}else{setErr(true);setPin(["","","",""]);setTimeout(()=>inputRefs[0].current?.focus(),50);}}
+  }
+  function handleKeyDown(i,e){if(e.key==="Backspace"&&!pin[i]&&i>0){inputRefs[i-1].current?.focus();}}
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px"}}>
+      <div style={{background:"#0b1628",border:"1px solid #1e3560",borderRadius:"20px",padding:"36px 32px",width:"100%",maxWidth:"320px",textAlign:"center"}}>
+        <div style={{width:"48px",height:"48px",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",borderRadius:"12px",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:"22px"}}>🔐</div>
+        <div style={{fontSize:"16px",fontWeight:900,color:"#f1f5f9",marginBottom:"6px"}}>Edit Mode</div>
+        <div style={{fontSize:"12px",color:"#3d5275",marginBottom:"24px"}}>Enter your PIN to enable editing</div>
+        <div style={{display:"flex",gap:"10px",justifyContent:"center",marginBottom:"16px"}}>
+          {pin.map((v,i)=>(
+            <input key={i} ref={inputRefs[i]} value={v} onChange={e=>handleKey(i,e.target.value)} onKeyDown={e=>handleKeyDown(i,e)}
+              inputMode="numeric" maxLength={1}
+              style={{width:"52px",height:"60px",textAlign:"center",fontSize:"24px",fontWeight:900,background:err?"#3b0a0a":"#112039",border:`2px solid ${err?"#ef4444":v?"#6366f1":"#1e3560"}`,borderRadius:"12px",color:err?"#fca5a5":"#f1f5f9",outline:"none",caretColor:"transparent"}}
+              autoFocus={i===0}
+            />
+          ))}
+        </div>
+        {err&&<div style={{fontSize:"12px",color:"#ef4444",fontWeight:700,marginBottom:"12px"}}>Senha incorreta. Tente novamente.</div>}
+        <button onClick={onClose} style={{background:"none",border:"none",color:"#3d5275",fontSize:"12px",cursor:"pointer",marginTop:"4px"}}>Cancelar — continuar visualizando</button>
+      </div>
+    </div>
+  );
+}
 
 export default function App(){
   const [tab,setTab]=useState("dashboard");
@@ -110,6 +147,10 @@ export default function App(){
   const [editLdr,setEditLdr]=useState(null);
   const [editHouse,setEditHouse]=useState(null);
   const [deactReason,setDeactReason]=useState("");
+
+  // Auth
+  const [canEdit,setCanEdit]=useState(false);
+  const [pinMod,setPinMod]=useState(false);
 
   // Filter states
   const [dashFilter,setDashFilter]=useState("all"); // all | 12m | 6m
@@ -201,7 +242,12 @@ export default function App(){
           <div style={{width:"28px",height:"28px",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",borderRadius:"7px",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:"13px",color:"#fff"}}>R</div>
           <span style={{fontSize:"13px",fontWeight:900,color:"#a5b4fc"}}>ROCKET MINISTRY</span>
         </div>
-        <span style={{fontSize:"10px",color:"#1e3560",fontWeight:700}}>LAGOINHA ORLANDO</span>
+        <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+          <span style={{fontSize:"10px",color:"#1e3560",fontWeight:700}}>LAGOINHA ORLANDO</span>
+          <button onClick={()=>canEdit?setCanEdit(false):setPinMod(true)} title={canEdit?"Sair do modo edição":"Entrar no modo edição"} style={{display:"flex",alignItems:"center",gap:"5px",padding:"4px 10px",borderRadius:"8px",border:`1px solid ${canEdit?"#14532d":"#1e3560"}`,background:canEdit?"#052e16":"#112039",color:canEdit?"#22c55e":"#3d5275",cursor:"pointer",fontSize:"11px",fontWeight:700}}>
+            {canEdit?<><Ico.Unlock/>Edit Mode</>:<><Ico.Lock/>View Only</>}
+          </button>
+        </div>
       </div>
       <div style={{display:"flex",padding:"0 16px",borderBottom:"1px solid #0f1e38",background:"#080f22",overflowX:"auto"}}>
         {NAV.map(({id,label,I})=><button key={id} onClick={()=>setTab(id)} style={{padding:"11px 13px",fontSize:"12px",fontWeight:700,cursor:"pointer",border:"none",background:"none",color:tab===id?"#a5b4fc":"#2a3f60",borderBottom:`2px solid ${tab===id?"#6366f1":"transparent"}`,display:"flex",alignItems:"center",gap:"5px",whiteSpace:"nowrap"}}><I/>{label}</button>)}
@@ -247,7 +293,7 @@ export default function App(){
               <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em"}}>Ministry Leadership</div>
               <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
                 <FilterPill options={minFilterOpts} value={ldrMinFilter} onChange={setLdrMinFilter}/>
-                <Btn sm onClick={()=>{setEditLdr(null);setLdrF(blankLdr);setLdrMod(true);}}><Ico.Plus/>Add Leader</Btn>
+                {canEdit&&<Btn sm onClick={()=>{setEditLdr(null);setLdrF(blankLdr);setLdrMod(true);}}><Ico.Plus/>Add Leader</Btn>}
               </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px"}}>
@@ -264,8 +310,8 @@ export default function App(){
                         <div style={{width:"6px",height:"6px",borderRadius:"50%",background:m?.color||"#475569",flexShrink:0}}/>
                         <span style={{fontSize:"11px",color:"#cbd5e1",flex:1,fontWeight:600}}>{l.name}</span>
                         <span style={{fontSize:"9px",color:m?.color||"#475569",fontWeight:700,whiteSpace:"nowrap"}}>{m?.name||""}</span>
-                        <button style={rBtn("#6366f1")} onClick={()=>{setEditLdr(l);setLdrF({name:l.name,phone:l.phone||"",role:l.role,ministryId:l.ministryId});setLdrMod(true);}}><Ico.Edit/></button>
-                        <button style={rBtn("#ef4444")} onClick={()=>setLeaders(p=>p.filter(x=>x.id!==l.id))}><Ico.X/></button>
+                        {canEdit&&<button style={rBtn("#6366f1")} onClick={()=>{setEditLdr(l);setLdrF({name:l.name,phone:l.phone||"",role:l.role,ministryId:l.ministryId});setLdrMod(true);}}><Ico.Edit/></button>}
+                        {canEdit&&<button style={rBtn("#ef4444")} onClick={()=>setLeaders(p=>p.filter(x=>x.id!==l.id))}><Ico.X/></button>}
                       </div>
                     );})}
                   </div>
@@ -287,7 +333,7 @@ export default function App(){
         {tab==="weekly"&&<div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
             <div style={{fontSize:"18px",fontWeight:900}}>Saturday Records</div>
-            <Btn onClick={()=>{setEditW(null);setWF(blankW);setWMod(true);}}><Ico.Plus/>Add Saturday</Btn>
+            {canEdit&&<Btn onClick={()=>{setEditW(null);setWF(blankW);setWMod(true);}}><Ico.Plus/>Add Saturday</Btn>}
           </div>
           <div style={card}>
             {weekly.length===0?<div style={{textAlign:"center",color:"#1a2d4e",padding:"48px",fontSize:"13px"}}>No records yet</div>:
@@ -297,7 +343,7 @@ export default function App(){
                 <td style={{...td,color:"#cbd5e1",fontWeight:700}}>{fmtDate(r.date)}</td>
                 <td style={td}><Badge color="#6366f1">{r.attendance}</Badge></td>
                 <td style={td}>{r.salvations?<Badge color="#ec4899">{r.salvations}</Badge>:"-"}</td>
-                <td style={{...td,padding:"6px 10px"}}><button style={rBtn("#6366f1")} onClick={()=>{setEditW(r);setWF({date:r.date,attendance:r.attendance,salvations:r.salvations});setWMod(true);}}><Ico.Edit/></button></td>
+                <td style={{...td,padding:"6px 10px"}}>{canEdit&&<button style={rBtn("#6366f1")} onClick={()=>{setEditW(r);setWF({date:r.date,attendance:r.attendance,salvations:r.salvations});setWMod(true);}}><Ico.Edit/></button>}</td>
               </tr>)}</tbody>
             </table></div>}
           </div>
@@ -306,7 +352,7 @@ export default function App(){
         {tab==="events"&&<div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"13px",flexWrap:"wrap",gap:"8px"}}>
             <div style={{fontSize:"18px",fontWeight:900}}>Events</div>
-            <Btn onClick={()=>{setEditE(null);setEF(blankE);setEMod(true);}}><Ico.Plus/>Add Event</Btn>
+            {canEdit&&<Btn onClick={()=>{setEditE(null);setEF(blankE);setEMod(true);}}><Ico.Plus/>Add Event</Btn>}
           </div>
 
           {/* Ministry filter for Events */}
@@ -333,10 +379,10 @@ export default function App(){
                     <div style={{fontSize:"10px",color:"#2a3f60",marginBottom:"5px"}}>{fmtDate(ev.date)}</div>
                     {m&&<Badge color={m.color} sm>{m.name}</Badge>}
                   </div>
-                  <div style={{display:"flex",gap:"4px"}}>
+                  {canEdit&&<div style={{display:"flex",gap:"4px"}}>
                     <button style={rBtn("#6366f1")} onClick={()=>{setEditE(ev);setEF({name:ev.name,date:ev.date,attendance:ev.attendance,ministryId:ev.ministryId||"geral"});setEMod(true);}}><Ico.Edit/></button>
                     <button style={rBtn("#ef4444")} onClick={()=>setEvents(p=>p.filter(x=>x.id!==ev.id))}><Ico.X/></button>
-                  </div>
+                  </div>}
                 </div>
                 <div style={{marginTop:"11px",display:"flex",alignItems:"baseline",gap:"4px"}}>
                   <span style={{fontSize:"26px",fontWeight:900,color:m?.color||"#f97316"}}>{ev.attendance}</span>
@@ -354,10 +400,10 @@ export default function App(){
             <KPI label="Co-Leaders" value={totalCoL} sub="across active GCs" accent="#8b5cf6" icon={<Ico.Users/>}/>
             <KPI label="Open Houses" value={openHouses} sub="hosting locations" accent="#14b8a6" icon={<Ico.Home/>}/>
           </div>
-          <div style={{display:"flex",gap:"8px",marginBottom:"13px",flexWrap:"wrap"}}>
+          {canEdit&&<div style={{display:"flex",gap:"8px",marginBottom:"13px",flexWrap:"wrap"}}>
             <Btn onClick={()=>{setEditGC(null);setGcF(blankGC);setCoTemp({name:"",phone:""});setGcMod(true);}}><Ico.Plus/>Add GC</Btn>
             <Btn v="ghost" onClick={()=>{setEditHouse(null);setHouseF(blankHouse);setHouseMod(true);}}><Ico.Home/>Add House</Btn>
-          </div>
+          </div>}
 
           {/* Neighborhood + Day of Week pie charts */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px",marginBottom:"13px"}}>
@@ -396,8 +442,8 @@ export default function App(){
                     <div><div style={{fontSize:"13px",fontWeight:800,color:"#f1f5f9"}}>{h.hostName}</div><div style={{fontSize:"10px",color:"#2a3f60",marginTop:"1px"}}>{h.address||"No address"}</div></div>
                     <div style={{display:"flex",gap:"4px",alignItems:"center"}}>
                       {gc>0&&<Badge color="#14b8a6" sm>{gc} GC</Badge>}
-                      <button style={rBtn("#6366f1")} onClick={()=>{setEditHouse(h);setHouseF({hostName:h.hostName,hostPhone:h.hostPhone||"",address:h.address||""});setHouseMod(true);}}><Ico.Edit/></button>
-                      <button style={rBtn("#ef4444")} onClick={()=>setHouses(p=>p.filter(x=>x.id!==h.id))}><Ico.X/></button>
+                      {canEdit&&<button style={rBtn("#6366f1")} onClick={()=>{setEditHouse(h);setHouseF({hostName:h.hostName,hostPhone:h.hostPhone||"",address:h.address||""});setHouseMod(true);}}><Ico.Edit/></button>}
+                      {canEdit&&<button style={rBtn("#ef4444")} onClick={()=>setHouses(p=>p.filter(x=>x.id!==h.id))}><Ico.X/></button>}
                     </div>
                   </div>
                   <WA phone={h.hostPhone}/>
@@ -419,10 +465,10 @@ export default function App(){
                   <td style={td}><Badge color={NBH_COLORS[g.neighborhood]||"#475569"} sm>{g.neighborhood}</Badge></td>
                   <td style={td}>{g.meetingDay?<Badge color={DAY_COLORS[g.meetingDay]||"#14b8a6"} sm>{g.meetingDay}</Badge>:"-"}</td>
                   <td style={{...td,fontWeight:700,color:g.avgAttendance?"#f1f5f9":"#1a2d4e"}}>{g.avgAttendance||"-"}</td>
-                  <td style={{...td,padding:"6px 10px"}}><div style={{display:"flex",gap:"4px"}}>
+                  <td style={{...td,padding:"6px 10px"}}>{canEdit&&<div style={{display:"flex",gap:"4px"}}>
                     <button style={rBtn("#6366f1")} onClick={()=>{setEditGC(g);setGcF({name:g.name,leaderName:g.leaderName,leaderPhone:g.leaderPhone||"",coLeaders:g.coLeaders||[],houseId:g.houseId||"",neighborhood:g.neighborhood,meetingDay:g.meetingDay||"",avgAttendance:g.avgAttendance||""});setCoTemp({name:"",phone:""});setGcMod(true);}}><Ico.Edit/></button>
                     <button style={rBtn("#f59e0b")} onClick={()=>{setDeactMod(g);setDeactReason("");}}><Ico.Archive/></button>
-                  </div></td>
+                  </div>}</td>
                 </tr>
               );})}
               </tbody>
@@ -437,13 +483,15 @@ export default function App(){
                 <td style={td}>{g.leaderName}</td>
                 <td style={{...td,color:"#ef4444",fontSize:"11px"}}>{g.inactiveDate?fmtDate(g.inactiveDate):"-"}</td>
                 <td style={{...td,fontSize:"11px",fontStyle:"italic"}}>{g.inactiveReason||"-"}</td>
-                <td style={{...td,padding:"6px 10px"}}><button style={rBtn("#22c55e")} onClick={()=>reactivate(g.id)}><Ico.Undo/></button></td>
+                <td style={{...td,padding:"6px 10px"}}>{canEdit&&<button style={rBtn("#22c55e")} onClick={()=>reactivate(g.id)}><Ico.Undo/></button>}</td>
               </tr>)}
               </tbody>
             </table></div>
           </div>}
         </div>}
       </div>
+
+      {pinMod&&<PinModal onSuccess={()=>{setCanEdit(true);setPinMod(false);}} onClose={()=>setPinMod(false)}/>}
 
       {wMod&&<Modal title={editW?"Edit Saturday":"Add Saturday"} onClose={()=>{setWMod(false);setEditW(null);}}>
         <Inp label="Date" type="date" value={wF.date} onChange={e=>setWF(p=>({...p,date:e.target.value}))}/>
