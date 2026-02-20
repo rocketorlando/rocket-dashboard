@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, BarChart, Bar } from "recharts";
 
 const MINISTRIES=[{id:"shine",name:"Rckt Shine",color:"#f472b6"},{id:"hero",name:"Rckt Hero",color:"#38bdf8"},{id:"music",name:"Rckt Music",color:"#4ade80"},{id:"bible",name:"Rckt Bible Club",color:"#92400e"},{id:"mission",name:"Rckt Mission",color:"#facc15"},{id:"media",name:"Rckt Midia",color:"#a855f7"},{id:"geral",name:"Evento Rocket Geral",color:"#fb923c"},{id:"pais",name:"Rocket Pais",color:"#ef4444"}];
 const MIN_MAP=Object.fromEntries(MINISTRIES.map(m=>[m.id,m]));
 const NBH_COLORS={"Windermere":"#6366f1","Dr. Phillips":"#8b5cf6","Millenia":"#a855f7","Davenport":"#ec4899","Winter Garden":"#f97316","Metrowest":"#14b8a6","Celebration":"#06b6d4","Lake Nona":"#3b82f6","Hunters Creek":"#22c55e","Clermont":"#eab308","Minneola":"#ef4444","Montverde":"#84cc16","Online":"#64748b"};
+const DAYS_ORDER=["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
+const DAY_COLORS={"Segunda":"#6366f1","Terça":"#8b5cf6","Quarta":"#14b8a6","Quinta":"#f97316","Sexta":"#ec4899","Sábado":"#facc15","Domingo":"#22c55e"};
 const INIT_GCS=[
   {id:"gc-1",name:"LION",leaderName:"Nicole Vassao",leaderPhone:"(689)253-4202",coLeaders:[],houseId:"",neighborhood:"Celebration",active:true,avgAttendance:0},
   {id:"gc-2",name:"BLUE",leaderName:"Gustavo Alves",leaderPhone:"(321)202-3664",coLeaders:[],houseId:"",neighborhood:"Clermont",active:true,avgAttendance:0},
@@ -70,6 +72,7 @@ const Ico={
   Archive:()=><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>,
   Undo:()=><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.11"/></svg>,
   Home:()=><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  Filter:()=><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
 };
 
 function Modal({title,onClose,children,wide}){return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(5px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px"}}><div style={{background:"#0b1628",border:"1px solid #1e3560",borderRadius:"16px",padding:"24px",width:"100%",maxWidth:wide?"600px":"460px",maxHeight:"90vh",overflowY:"auto"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}}><h3 style={{margin:0,fontSize:"15px",fontWeight:800,color:"#f1f5f9"}}>{title}</h3><button onClick={onClose} style={{background:"#1e3560",border:"none",borderRadius:"7px",width:"26px",height:"26px",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#64748b"}}><Ico.X/></button></div>{children}</div></div>);}
@@ -80,6 +83,12 @@ function Badge({children,color="#6366f1",sm}){return <span style={{display:"inli
 function WA({phone}){if(!phone)return<span style={{color:"#1a2d4e",fontSize:"12px"}}>-</span>;return<a href={waLink(phone)} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:"4px",color:"#22c55e",fontSize:"11px",fontWeight:700,textDecoration:"none",background:"#052e16",padding:"3px 8px",borderRadius:"7px",border:"1px solid #14532d"}}><Ico.Phone/>{phone}</a>;}
 function CTip({active,payload,label}){if(!active||!payload?.length)return null;return<div style={{background:"#0b1628",border:"1px solid #1e3560",borderRadius:"8px",padding:"9px 13px"}}><p style={{margin:"0 0 3px",fontSize:"10px",color:"#3d5275",fontWeight:700}}>{label}</p>{payload.map((p,i)=><p key={i} style={{margin:"2px 0",fontSize:"12px",color:p.color,fontWeight:700}}>{p.name}: {p.value}</p>)}</div>;}
 function KPI({label,value,sub,goal,accent="#6366f1",icon}){const pct=goal?Math.min(100,Math.round((Number(value)||0)/goal*100)):null;return(<div style={{background:"#0b1628",border:"1px solid #1a2d4e",borderRadius:"13px",padding:"16px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"2px",background:`linear-gradient(90deg,${accent},transparent)`}}/><div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}><span style={{fontSize:"10px",fontWeight:700,color:"#3d5275",textTransform:"uppercase",letterSpacing:"0.07em"}}>{label}</span><span style={{color:accent,opacity:0.5}}>{icon}</span></div><div style={{fontSize:"32px",fontWeight:900,color:"#f1f5f9",lineHeight:1,marginBottom:"3px"}}>{value??"-"}</div>{sub&&<div style={{fontSize:"10px",color:"#3d5275",marginBottom:"4px"}}>{sub}</div>}{goal!=null&&<><div style={{display:"flex",justifyContent:"space-between",fontSize:"10px",color:"#2a3f60",marginBottom:"3px"}}><span>Goal: {goal}</span><span style={{color:pct>=100?"#22c55e":accent}}>{pct}%</span></div><div style={{height:"3px",background:"#112039",borderRadius:"99px",overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${accent},#a78bfa)`,borderRadius:"99px"}}/></div></>}</div>);}
+
+function FilterPill({options,value,onChange}){return(
+  <div style={{display:"flex",gap:"5px",flexWrap:"wrap"}}>
+    {options.map(o=><button key={o.value} onClick={()=>onChange(o.value)} style={{padding:"3px 11px",borderRadius:"99px",fontSize:"11px",fontWeight:700,cursor:"pointer",border:`1px solid ${value===o.value?"#6366f1":"#1e3560"}`,background:value===o.value?"#6366f122":"#112039",color:value===o.value?"#a5b4fc":"#3d5275"}}>{o.label}</button>)}
+  </div>
+);}
 
 export default function App(){
   const [tab,setTab]=useState("dashboard");
@@ -101,9 +110,15 @@ export default function App(){
   const [editLdr,setEditLdr]=useState(null);
   const [editHouse,setEditHouse]=useState(null);
   const [deactReason,setDeactReason]=useState("");
+
+  // Filter states
+  const [dashFilter,setDashFilter]=useState("all"); // all | 12m | 6m
+  const [ldrMinFilter,setLdrMinFilter]=useState("all");
+  const [evMinFilter,setEvMinFilter]=useState("all");
+
   const blankW={date:new Date().toISOString().split("T")[0],attendance:"",salvations:""};
   const blankE={name:"",date:new Date().toISOString().split("T")[0],attendance:"",ministryId:"geral"};
-  const blankGC={name:"",leaderName:"",leaderPhone:"",coLeaders:[],houseId:"",neighborhood:"",avgAttendance:""};
+  const blankGC={name:"",leaderName:"",leaderPhone:"",coLeaders:[],houseId:"",neighborhood:"",meetingDay:"",avgAttendance:""};
   const blankLdr={name:"",phone:"",role:"head",ministryId:"shine"};
   const blankHouse={hostName:"",hostPhone:"",address:""};
   const [wF,setWF]=useState(blankW);
@@ -128,15 +143,39 @@ export default function App(){
   const internships=leaders.filter(l=>l.role==="internship");
   const heads=leaders.filter(l=>l.role==="head");
   const totalSalv=weekly.reduce((s,r)=>s+(Number(r.salvations)||0),0);
-  const bestAtt=weekly.reduce((mx,r)=>Math.max(mx,Number(r.attendance)||0),0);
   const lastRec=sortW[sortW.length-1];
-  const pieDat=Object.entries(gcs.filter(g=>g.active).reduce((a,g)=>{a[g.neighborhood]=(a[g.neighborhood]||0)+1;return a},{})).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
+
+  // Dashboard filter logic
+  function filterByPeriod(records){
+    if(dashFilter==="all")return records;
+    const now=new Date();
+    const months=dashFilter==="12m"?12:6;
+    const cutoff=new Date(now.getFullYear(),now.getMonth()-months,now.getDate());
+    return records.filter(r=>new Date(r.date+"T12:00:00")>=cutoff);
+  }
+  const filteredW=filterByPeriod(sortW);
+  const bestAtt=filteredW.reduce((mx,r)=>Math.max(mx,Number(r.attendance)||0),0);
+
+  // Last 12 saturdays for chart (always last 12 regardless of filter)
   const wChart=sortW.slice(-12).map(r=>({label:fmtShort(r.date),attendance:Number(r.attendance)||0,salvations:Number(r.salvations)||0}));
+
+  const pieDat=Object.entries(gcs.filter(g=>g.active).reduce((a,g)=>{a[g.neighborhood]=(a[g.neighborhood]||0)+1;return a},{})).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
+
+  // Day of week pie chart for GCs
+  const dayPieDat=DAYS_ORDER.map(day=>{const count=gcs.filter(g=>g.active&&g.meetingDay===day).length;return{name:day,value:count};}).filter(d=>d.value>0);
+
   const evByMin=MINISTRIES.map(m=>({...m,count:events.filter(e=>e.ministryId===m.id).length,total:events.filter(e=>e.ministryId===m.id).reduce((s,e)=>s+(Number(e.attendance)||0),0)}));
+
+  // Events filtered by ministry
+  const filteredEvents=evMinFilter==="all"?events:events.filter(e=>e.ministryId===evMinFilter);
+
+  // Leaders filtered by ministry
+  const filteredInternships=ldrMinFilter==="all"?internships:internships.filter(l=>l.ministryId===ldrMinFilter);
+  const filteredHeads=ldrMinFilter==="all"?heads:heads.filter(l=>l.ministryId===ldrMinFilter);
 
   function saveW(){if(!wF.date||!wF.attendance)return;const r={...wF,id:editW?.id||uid(),attendance:Number(wF.attendance),salvations:Number(wF.salvations)||0};setWeekly(p=>editW?p.map(x=>x.id===r.id?r:x):[...p,r]);setWMod(false);setEditW(null);setWF(blankW);}
   function saveE(){if(!eF.name||!eF.date)return;const e={...eF,id:editE?.id||uid(),attendance:Number(eF.attendance)||0};setEvents(p=>editE?p.map(x=>x.id===e.id?e:x):[...p,e]);setEMod(false);setEditE(null);setEF(blankE);}
-  function saveGC(){if(!gcF.name||!gcF.leaderName)return;const g={...gcF,id:editGC?.id||uid(),active:editGC?editGC.active:true,avgAttendance:Number(gcF.avgAttendance)||0,inactiveDate:editGC?.inactiveDate||"",inactiveReason:editGC?.inactiveReason||""};setGcs(p=>editGC?p.map(x=>x.id===g.id?g:x):[...p,g]);setGcMod(false);setEditGC(null);setGcF(blankGC);setCoTemp({name:"",phone:""});}
+  function saveGC(){if(!gcF.name||!gcF.leaderName)return;const g={...gcF,id:editGC?.id||uid(),active:editGC?editGC.active:true,meetingDay:gcF.meetingDay||"",avgAttendance:Number(gcF.avgAttendance)||0,inactiveDate:editGC?.inactiveDate||"",inactiveReason:editGC?.inactiveReason||""};setGcs(p=>editGC?p.map(x=>x.id===g.id?g:x):[...p,g]);setGcMod(false);setEditGC(null);setGcF(blankGC);setCoTemp({name:"",phone:""});}
   function saveLdr(){if(!ldrF.name)return;const l={...ldrF,id:editLdr?.id||uid()};setLeaders(p=>editLdr?p.map(x=>x.id===l.id?l:x):[...p,l]);setLdrMod(false);setEditLdr(null);setLdrF(blankLdr);}
   function saveHouse(){if(!houseF.hostName)return;const h={...houseF,id:editHouse?.id||uid()};setHouses(p=>editHouse?p.map(x=>x.id===h.id?h:x):[...p,h]);setHouseMod(false);setEditHouse(null);setHouseF(blankHouse);}
   function doDeact(){if(!deactMod)return;setGcs(p=>p.map(g=>g.id===deactMod.id?{...g,active:false,inactiveReason:deactReason,inactiveDate:new Date().toISOString().split("T")[0]}:g));setDeactMod(null);setDeactReason("");}
@@ -149,6 +188,9 @@ export default function App(){
   const td={padding:"9px 10px",fontSize:"12px",color:"#64748b",borderBottom:"1px solid #0b1628"};
   const rBtn=(c)=>({background:"#112039",border:"none",borderRadius:"6px",padding:"4px 6px",cursor:"pointer",color:c,display:"inline-flex",alignItems:"center"});
   const NAV=[{id:"dashboard",label:"Dashboard",I:Ico.Dash},{id:"weekly",label:"Weekly",I:Ico.Cal},{id:"events",label:"Events",I:Ico.Star},{id:"gcs",label:"Rocket Crew (GC)",I:Ico.Users}];
+
+  const periodOpts=[{value:"all",label:"All Time"},{value:"12m",label:"Last 12 Months"},{value:"6m",label:"Last 6 Months"}];
+  const minFilterOpts=[{value:"all",label:"All"},...MINISTRIES.map(m=>({value:m.id,label:m.name}))];
 
   if(!loaded)return<div style={{minHeight:"100vh",background:"#060d1f",display:"flex",alignItems:"center",justifyContent:"center",color:"#1e3560"}}>Loading...</div>;
 
@@ -168,9 +210,16 @@ export default function App(){
 
         {tab==="dashboard"&&<div>
           <div style={{fontSize:"18px",fontWeight:900,marginBottom:"16px"}}>Overview</div>
+
+          {/* Period filter for Best Saturday & Attendance Goal */}
+          <div style={{display:"flex",alignItems:"center",gap:"9px",marginBottom:"13px",flexWrap:"wrap"}}>
+            <span style={{fontSize:"10px",fontWeight:700,color:"#3d5275",textTransform:"uppercase",letterSpacing:"0.07em",display:"flex",alignItems:"center",gap:"4px"}}><Ico.Filter/>Period</span>
+            <FilterPill options={periodOpts} value={dashFilter} onChange={setDashFilter}/>
+          </div>
+
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:"11px",marginBottom:"13px"}}>
             <KPI label="Active GCs" value={activeGCs} goal={55} accent="#6366f1" icon={<Ico.Users/>}/>
-            <KPI label="Best Saturday" value={bestAtt||"-"} goal={400} sub="single service" accent="#8b5cf6" icon={<Ico.Star/>}/>
+            <KPI label="Best Saturday" value={bestAtt||"-"} goal={400} sub={dashFilter==="all"?"all time":dashFilter==="12m"?"last 12 months":"last 6 months"} accent="#8b5cf6" icon={<Ico.Star/>}/>
             <KPI label="Last Saturday" value={lastRec?.attendance||"-"} goal={400} accent="#a855f7" icon={<Ico.Cal/>}/>
             <KPI label="Total Salvations" value={totalSalv} sub="all time" accent="#ec4899"/>
           </div>
@@ -179,22 +228,30 @@ export default function App(){
               <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"9px"}}>GC Goal — 55 Active</div>
               <div style={{fontSize:"36px",fontWeight:900,color:"#6366f1",lineHeight:1,marginBottom:"6px"}}>{activeGCs}<span style={{fontSize:"14px",color:"#1e3560"}}>/55</span></div>
               <div style={{height:"4px",background:"#112039",borderRadius:"99px",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(100,(activeGCs/55)*100)}%`,background:"linear-gradient(90deg,#6366f1,#8b5cf6)",borderRadius:"99px"}}/></div>
-              <p style={{fontSize:"11px",color:"#2a3f60",marginTop:"5px",marginBottom:0}}>{activeGCs>=55?"Goal reached!":"${55-activeGCs} more to go"}</p>
+              <p style={{fontSize:"11px",color:"#2a3f60",marginTop:"5px",marginBottom:0}}>{activeGCs>=55?"Goal reached!":`${55-activeGCs} more to go`}</p>
             </div>
             <div style={card}>
-              <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"9px"}}>Attendance Goal — 400/Sat</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"9px"}}>
+                <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em"}}>Attendance Goal — 400/Sat</div>
+                <span style={{fontSize:"9px",color:"#3d5275",fontWeight:700}}>{dashFilter==="all"?"All Time":dashFilter==="12m"?"12 Months":"6 Months"}</span>
+              </div>
               <div style={{fontSize:"36px",fontWeight:900,color:"#8b5cf6",lineHeight:1,marginBottom:"6px"}}>{bestAtt||0}<span style={{fontSize:"14px",color:"#1e3560"}}>/400</span></div>
               <div style={{height:"4px",background:"#112039",borderRadius:"99px",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(100,((bestAtt||0)/400)*100)}%`,background:"linear-gradient(90deg,#8b5cf6,#ec4899)",borderRadius:"99px"}}/></div>
               <p style={{fontSize:"11px",color:"#2a3f60",marginTop:"5px",marginBottom:0}}>Best: {bestAtt} teens</p>
             </div>
           </div>
+
+          {/* Ministry Leadership section on Dashboard */}
           <div style={{...card,marginBottom:"13px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px",flexWrap:"wrap",gap:"8px"}}>
               <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em"}}>Ministry Leadership</div>
-              <Btn sm onClick={()=>{setEditLdr(null);setLdrF(blankLdr);setLdrMod(true);}}><Ico.Plus/>Add Leader</Btn>
+              <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
+                <FilterPill options={minFilterOpts} value={ldrMinFilter} onChange={setLdrMinFilter}/>
+                <Btn sm onClick={()=>{setEditLdr(null);setLdrF(blankLdr);setLdrMod(true);}}><Ico.Plus/>Add Leader</Btn>
+              </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px"}}>
-              {[{role:"internship",label:"Internship",accent:"#6366f1",list:internships},{role:"head",label:"Head Leaders",accent:"#a855f7",list:heads}].map(({role,label,accent,list})=>(
+              {[{role:"internship",label:"Internship",accent:"#6366f1",list:filteredInternships},{role:"head",label:"Head Leaders",accent:"#a855f7",list:filteredHeads}].map(({role,label,accent,list})=>(
                 <div key={role} style={{background:"#060d1f",borderRadius:"10px",padding:"11px",border:"1px solid #1a2d4e"}}>
                   <div style={{display:"flex",alignItems:"baseline",gap:"6px",marginBottom:"9px"}}>
                     <span style={{fontSize:"24px",fontWeight:900,color:"#f1f5f9"}}>{list.length}</span>
@@ -219,6 +276,8 @@ export default function App(){
               {MINISTRIES.map(m=><span key={m.id} style={{display:"inline-flex",alignItems:"center",gap:"4px",fontSize:"10px",color:m.color,background:m.color+"15",padding:"2px 8px",borderRadius:"99px",fontWeight:700,border:`1px solid ${m.color}33`}}><span style={{width:"5px",height:"5px",borderRadius:"50%",background:m.color,display:"inline-block"}}/>{m.name}</span>)}
             </div>
           </div>
+
+          {/* Last 12 Saturdays chart */}
           {wChart.length>0&&<div style={card}>
             <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"11px"}}>Last {wChart.length} Saturdays</div>
             <ResponsiveContainer width="100%" height={155}><LineChart data={wChart}><CartesianGrid strokeDasharray="3 3" stroke="#1a2d4e"/><XAxis dataKey="label" tick={{fill:"#2a3f60",fontSize:9}} axisLine={false} tickLine={false}/><YAxis tick={{fill:"#2a3f60",fontSize:9}} axisLine={false} tickLine={false}/><Tooltip content={<CTip/>}/><Legend wrapperStyle={{fontSize:"11px",color:"#3d5275"}}/><Line type="monotone" dataKey="attendance" stroke="#6366f1" strokeWidth={2} dot={{fill:"#6366f1",r:3}} name="Attendance"/><Line type="monotone" dataKey="salvations" stroke="#ec4899" strokeWidth={2} dot={{fill:"#ec4899",r:3}} name="Salvations"/></LineChart></ResponsiveContainer>
@@ -245,20 +304,27 @@ export default function App(){
         </div>}
 
         {tab==="events"&&<div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"13px",flexWrap:"wrap",gap:"8px"}}>
             <div style={{fontSize:"18px",fontWeight:900}}>Events</div>
             <Btn onClick={()=>{setEditE(null);setEF(blankE);setEMod(true);}}><Ico.Plus/>Add Event</Btn>
           </div>
+
+          {/* Ministry filter for Events */}
+          <div style={{display:"flex",alignItems:"center",gap:"9px",marginBottom:"13px",flexWrap:"wrap"}}>
+            <span style={{fontSize:"10px",fontWeight:700,color:"#3d5275",textTransform:"uppercase",letterSpacing:"0.07em",display:"flex",alignItems:"center",gap:"4px"}}><Ico.Filter/>Ministry</span>
+            <FilterPill options={minFilterOpts} value={evMinFilter} onChange={setEvMinFilter}/>
+          </div>
+
           {events.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"9px",marginBottom:"16px"}}>
-            {evByMin.filter(m=>m.count>0).map(m=><div key={m.id} style={{...card,padding:"11px",borderTop:`2px solid ${m.color}`}}>
+            {evByMin.filter(m=>m.count>0&&(evMinFilter==="all"||m.id===evMinFilter)).map(m=><div key={m.id} style={{...card,padding:"11px",borderTop:`2px solid ${m.color}`}}>
               <div style={{fontSize:"9px",fontWeight:700,color:m.color,textTransform:"uppercase",marginBottom:"3px"}}>{m.name}</div>
               <div style={{fontSize:"20px",fontWeight:900,color:"#f1f5f9"}}>{m.count}</div>
               <div style={{fontSize:"10px",color:"#2a3f60"}}>{m.total} attendees</div>
             </div>)}
           </div>}
-          {events.length===0?<div style={{...card,textAlign:"center",color:"#1a2d4e",padding:"56px",fontSize:"13px"}}>No events yet</div>:
+          {filteredEvents.length===0?<div style={{...card,textAlign:"center",color:"#1a2d4e",padding:"56px",fontSize:"13px"}}>{events.length===0?"No events yet":"No events for this ministry"}</div>:
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:"11px"}}>
-            {[...events].sort((a,b)=>b.date.localeCompare(a.date)).map(ev=>{const m=MIN_MAP[ev.ministryId];return(
+            {[...filteredEvents].sort((a,b)=>b.date.localeCompare(a.date)).map(ev=>{const m=MIN_MAP[ev.ministryId];return(
               <div key={ev.id} style={{...card,position:"relative"}}>
                 <div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:m?.color||"#6366f1",borderRadius:"13px 13px 0 0"}}/>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
@@ -292,17 +358,35 @@ export default function App(){
             <Btn onClick={()=>{setEditGC(null);setGcF(blankGC);setCoTemp({name:"",phone:""});setGcMod(true);}}><Ico.Plus/>Add GC</Btn>
             <Btn v="ghost" onClick={()=>{setEditHouse(null);setHouseF(blankHouse);setHouseMod(true);}}><Ico.Home/>Add House</Btn>
           </div>
-          <div style={{...card,marginBottom:"13px"}}>
-            <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"11px"}}>By Neighborhood</div>
-            <div style={{display:"flex",alignItems:"center",gap:"14px",flexWrap:"wrap"}}>
-              <ResponsiveContainer width={185} height={185} style={{flex:"0 0 185px"}}>
-                <PieChart><Pie data={pieDat} cx="50%" cy="50%" innerRadius={40} outerRadius={85} paddingAngle={2} dataKey="value">{pieDat.map((e,i)=><Cell key={i} fill={NBH_COLORS[e.name]||"#475569"}/>)}</Pie><Tooltip formatter={(v,n)=>[`${v} GCs`,n]} contentStyle={{background:"#0b1628",border:"1px solid #1a2d4e",borderRadius:"8px",color:"#f1f5f9",fontSize:"12px"}}/></PieChart>
-              </ResponsiveContainer>
-              <div style={{flex:1,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"4px"}}>
-                {pieDat.map((nd,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:"5px"}}><div style={{width:"7px",height:"7px",borderRadius:"50%",background:NBH_COLORS[nd.name]||"#475569",flexShrink:0}}/><span style={{fontSize:"11px",color:"#475569",flex:1}}>{nd.name}</span><span style={{fontSize:"11px",fontWeight:800,color:"#f1f5f9"}}>{nd.value}</span></div>)}
+
+          {/* Neighborhood + Day of Week pie charts */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px",marginBottom:"13px"}}>
+            <div style={card}>
+              <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"11px"}}>By Neighborhood</div>
+              <div style={{display:"flex",alignItems:"center",gap:"14px",flexWrap:"wrap"}}>
+                <ResponsiveContainer width={160} height={160} style={{flex:"0 0 160px"}}>
+                  <PieChart><Pie data={pieDat} cx="50%" cy="50%" innerRadius={35} outerRadius={75} paddingAngle={2} dataKey="value">{pieDat.map((e,i)=><Cell key={i} fill={NBH_COLORS[e.name]||"#475569"}/>)}</Pie><Tooltip formatter={(v,n)=>[`${v} GCs`,n]} contentStyle={{background:"#0b1628",border:"1px solid #1a2d4e",borderRadius:"8px",color:"#f1f5f9",fontSize:"12px"}}/></PieChart>
+                </ResponsiveContainer>
+                <div style={{flex:1,display:"flex",flexDirection:"column",gap:"3px"}}>
+                  {pieDat.map((nd,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:"5px"}}><div style={{width:"7px",height:"7px",borderRadius:"50%",background:NBH_COLORS[nd.name]||"#475569",flexShrink:0}}/><span style={{fontSize:"10px",color:"#475569",flex:1}}>{nd.name}</span><span style={{fontSize:"10px",fontWeight:800,color:"#f1f5f9"}}>{nd.value}</span></div>)}
+                </div>
               </div>
             </div>
+            <div style={card}>
+              <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"11px"}}>By Day of Week</div>
+              {dayPieDat.length===0?<div style={{fontSize:"11px",color:"#1e3560",padding:"20px 0"}}>No days set — edit GCs to add</div>:
+              <div style={{display:"flex",alignItems:"center",gap:"14px",flexWrap:"wrap"}}>
+                <ResponsiveContainer width={160} height={160} style={{flex:"0 0 160px"}}>
+                  <PieChart><Pie data={dayPieDat} cx="50%" cy="50%" innerRadius={35} outerRadius={75} paddingAngle={2} dataKey="value">{dayPieDat.map((e,i)=><Cell key={i} fill={DAY_COLORS[e.name]||"#6366f1"}/>)}</Pie><Tooltip formatter={(v,n)=>[`${v} GCs`,n]} contentStyle={{background:"#0b1628",border:"1px solid #1a2d4e",borderRadius:"8px",color:"#f1f5f9",fontSize:"12px"}}/></PieChart>
+                </ResponsiveContainer>
+                <div style={{flex:1,display:"flex",flexDirection:"column",gap:"3px"}}>
+                  {dayPieDat.map((d,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:"5px"}}><div style={{width:"7px",height:"7px",borderRadius:"50%",background:DAY_COLORS[d.name]||"#6366f1",flexShrink:0}}/><span style={{fontSize:"10px",color:"#475569",flex:1}}>{d.name}</span><span style={{fontSize:"10px",fontWeight:800,color:"#f1f5f9"}}>{d.value}</span></div>)}
+                  {gcs.filter(g=>g.active&&!g.meetingDay).length>0&&<div style={{display:"flex",alignItems:"center",gap:"5px",marginTop:"3px"}}><div style={{width:"7px",height:"7px",borderRadius:"50%",background:"#1e3560",flexShrink:0}}/><span style={{fontSize:"10px",color:"#1e3560",flex:1,fontStyle:"italic"}}>Not set</span><span style={{fontSize:"10px",fontWeight:800,color:"#2a3f60"}}>{gcs.filter(g=>g.active&&!g.meetingDay).length}</span></div>}
+                </div>
+              </div>}
+            </div>
           </div>
+
           {houses.length>0&&<div style={{...card,marginBottom:"13px"}}>
             <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"11px"}}>Houses ({houses.length})</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:"9px"}}>
@@ -324,7 +408,7 @@ export default function App(){
           <div style={{...card,marginBottom:"13px"}}>
             <div style={{fontSize:"10px",fontWeight:700,color:"#2a3f60",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"11px"}}>Active GCs ({activeGCs})</div>
             <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",minWidth:"620px"}}>
-              <thead><tr><th style={th}>GC</th><th style={th}>Leader</th><th style={th}>WhatsApp</th><th style={th}>Co-Leaders</th><th style={th}>House</th><th style={th}>Area</th><th style={th}>Avg</th><th style={th}></th></tr></thead>
+              <thead><tr><th style={th}>GC</th><th style={th}>Leader</th><th style={th}>WhatsApp</th><th style={th}>Co-Leaders</th><th style={th}>House</th><th style={th}>Area</th><th style={th}>Dia</th><th style={th}>Avg</th><th style={th}></th></tr></thead>
               <tbody>{gcs.filter(g=>g.active).map(g=>{const house=houses.find(h=>h.id===g.houseId);return(
                 <tr key={g.id}>
                   <td style={{...td,fontWeight:800,color:"#f1f5f9"}}>{g.name}</td>
@@ -333,9 +417,10 @@ export default function App(){
                   <td style={{...td,maxWidth:"130px"}}>{g.coLeaders?.length?<div style={{display:"flex",flexDirection:"column",gap:"2px"}}>{g.coLeaders.map(c=><div key={c.id} style={{fontSize:"11px",color:"#64748b"}}>{c.name}</div>)}</div>:"-"}</td>
                   <td style={td}>{house?<span style={{fontSize:"11px",color:"#14b8a6",fontWeight:600}}>{house.hostName}</span>:"-"}</td>
                   <td style={td}><Badge color={NBH_COLORS[g.neighborhood]||"#475569"} sm>{g.neighborhood}</Badge></td>
+                  <td style={td}>{g.meetingDay?<Badge color={DAY_COLORS[g.meetingDay]||"#14b8a6"} sm>{g.meetingDay}</Badge>:"-"}</td>
                   <td style={{...td,fontWeight:700,color:g.avgAttendance?"#f1f5f9":"#1a2d4e"}}>{g.avgAttendance||"-"}</td>
                   <td style={{...td,padding:"6px 10px"}}><div style={{display:"flex",gap:"4px"}}>
-                    <button style={rBtn("#6366f1")} onClick={()=>{setEditGC(g);setGcF({name:g.name,leaderName:g.leaderName,leaderPhone:g.leaderPhone||"",coLeaders:g.coLeaders||[],houseId:g.houseId||"",neighborhood:g.neighborhood,avgAttendance:g.avgAttendance||""});setCoTemp({name:"",phone:""});setGcMod(true);}}><Ico.Edit/></button>
+                    <button style={rBtn("#6366f1")} onClick={()=>{setEditGC(g);setGcF({name:g.name,leaderName:g.leaderName,leaderPhone:g.leaderPhone||"",coLeaders:g.coLeaders||[],houseId:g.houseId||"",neighborhood:g.neighborhood,meetingDay:g.meetingDay||"",avgAttendance:g.avgAttendance||""});setCoTemp({name:"",phone:""});setGcMod(true);}}><Ico.Edit/></button>
                     <button style={rBtn("#f59e0b")} onClick={()=>{setDeactMod(g);setDeactReason("");}}><Ico.Archive/></button>
                   </div></td>
                 </tr>
@@ -383,6 +468,7 @@ export default function App(){
           <Inp label="Leader Name" value={gcF.leaderName} onChange={e=>setGcF(p=>({...p,leaderName:e.target.value}))}/>
           <Inp label="Leader Phone" placeholder="(407) 000-0000" value={gcF.leaderPhone} onChange={e=>setGcF(p=>({...p,leaderPhone:e.target.value}))}/>
           <Inp label="Neighborhood" placeholder="Windermere" value={gcF.neighborhood} onChange={e=>setGcF(p=>({...p,neighborhood:e.target.value}))}/>
+          <Sel label="Dia da Semana" value={gcF.meetingDay} onChange={e=>setGcF(p=>({...p,meetingDay:e.target.value}))}><option value="">Não definido</option><option>Segunda</option><option>Terça</option><option>Quarta</option><option>Quinta</option><option>Sexta</option><option>Sábado</option><option>Domingo</option></Sel>
           <Inp label="Avg Attendance" type="number" placeholder="12" value={gcF.avgAttendance} onChange={e=>setGcF(p=>({...p,avgAttendance:e.target.value}))}/>
         </div>
         <Sel label="Host House" value={gcF.houseId} onChange={e=>setGcF(p=>({...p,houseId:e.target.value}))}>
